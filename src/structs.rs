@@ -17,12 +17,12 @@ pub struct Lock {
 
 impl Constructor for Lock {
     fn new() -> Lock {
-        Lock { 
+        Lock {
             screen: 0,
             root: 0,
             win: 0,
             pmap: 0,
-            colors: Vec::new()
+            colors: Vec::new(),
         }
     }
 }
@@ -36,13 +36,24 @@ pub struct Xrandr {
 
 impl Constructor for Xrandr {
     fn new() -> Xrandr {
-        Xrandr { active: 0, evbase: 0, errbase: 0 }
+        Xrandr {
+            active: 0,
+            evbase: 0,
+            errbase: 0,
+        }
     }
 }
 
 impl Constructor for XColor {
     fn new() -> XColor {
-        XColor { pixel: 0, red: 0, green: 0, blue: 0, flags: 0, pad: 0 }
+        XColor {
+            pixel: 0,
+            red: 0,
+            green: 0,
+            blue: 0,
+            flags: 0,
+            pad: 0,
+        }
     }
 }
 
@@ -73,4 +84,3 @@ impl Constructor for XEvent {
         XEvent { pad: [0; 24] }
     }
 }
-

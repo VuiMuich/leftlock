@@ -1,21 +1,15 @@
-extern crate x11;
-extern crate pwd;
-extern crate libc;
 extern crate crypto;
 extern crate docopt;
+extern crate libc;
+extern crate pwd;
+extern crate x11;
 
 mod config;
 
-use structs::{
-    Lock,
-    Xrandr,
-    Constructor,
-};
+use structs::{Constructor, Lock, Xrandr};
 mod structs;
 
-use keys::{
-    get_key_type,
-};
+use keys::get_key_type;
 mod keys;
 
 use arg::USAGE;
@@ -23,11 +17,9 @@ mod arg;
 
 use std::ptr;
 
-use std::error::Error;
-
 use std::fs::File;
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
 
 use std::collections::HashMap;
 
@@ -38,13 +30,11 @@ use std::cmp::Ordering;
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 
+use x11::keysym::*;
 use x11::xlib::*;
 use x11::xrandr::*;
-use x11::keysym::*;
 
-use libc::{
-    usleep,
-};
+use libc::usleep;
 
 use docopt::Docopt;
 
@@ -53,19 +43,18 @@ enum Color {
     INIT,
     INPUT,
     FAILED,
-    NUMCOLS
+    NUMCOLS,
 }
 
 fn read_input() -> String {
     let mut input = String::new();
     match io::stdin().read_line(&mut input) {
         Ok(_) => input,
-        Err(msg) => panic!("Error reading input: {}", msg.description()),
+        Err(msg) => panic!("Error reading input: {}", msg.to_string()),
     }
 }
 
 fn get_pwfile_path() -> String {
-
     let username = config::getusername();
 
     let file_prefix = String::from("/home/");
@@ -120,17 +109,17 @@ fn create_pwfile() -> String {
     match File::create(path.clone()) {
         Ok(f) => {
             let mut file = f;
-            match file.write_all(pwd_hash.as_bytes()){
+            match file.write_all(pwd_hash.as_bytes()) {
                 Ok(_) => {
                     println!("Successfully wrote to {}", path);
                     pwd_hash
-                },
+                }
                 Err(msg) => {
-                    panic!("Error writing to file: {}",  msg);
+                    panic!("Error writing to file: {}", msg);
                 }
             }
             /* Return the hash to the getpw function */
-        },
+        }
         Err(msg) => {
             panic!("Error creating file {}: {}", path, msg);
         }
@@ -145,7 +134,7 @@ fn getpw(force_create_file: bool) -> String {
     /* Read password from /home/user/.rlock_pwd file */
 
     match (File::open(get_pwfile_path()), force_create_file) {
-        (Ok(f), false) => { 
+        (Ok(f), false) => {
             let mut file = f;
             let mut contents = String::new();
             match file.read_to_string(&mut contents) {
@@ -154,7 +143,7 @@ fn getpw(force_create_file: bool) -> String {
                     panic!("Cannot read contents of file. {}", msg);
                 }
             }
-        },
+        }
         /* Create file in case it does not exist */
         (Err(_), _) | (_, true) => {
             println!("Creating password file ... ");
@@ -164,17 +153,22 @@ fn getpw(force_create_file: bool) -> String {
 }
 
 pub fn getvalue(key: u32, map: HashMap<u32, String>) -> String {
-
     match map.get(&key) {
         Some(value) => value.to_string(),
         None => "".to_string(),
     }
 }
 
-fn lockscreen(dpy: *mut Display, rr: Xrandr, screen: i32, colors: HashMap<u32, String>, keyboard_only: bool) -> (Lock, bool) {
+fn lockscreen(
+    dpy: *mut Display,
+    rr: Xrandr,
+    screen: i32,
+    colors: HashMap<u32, String>,
+    keyboard_only: bool,
+) -> (Lock, bool) {
     if dpy.is_null() || screen < 0 {
         return (Lock::new(), false);
-    } 
+    }
 
     let mut ptgrab = -1;
     let mut kbgrab = -1;
@@ -196,7 +190,8 @@ fn lockscreen(dpy: *mut Display, rr: Xrandr, screen: i32, colors: HashMap<u32, S
                 default_cmap,
                 getvalue(i, colors.clone()).as_ptr() as *const i8,
                 &mut screen_def_return,
-                &mut exact_def_return);
+                &mut exact_def_return,
+            );
             lock.colors.push(screen_def_return.pixel);
             println!("Err: {}, {:?}", err, screen_def_return);
         }
@@ -207,20 +202,21 @@ fn lockscreen(dpy: *mut Display, rr: Xrandr, screen: i32, colors: HashMap<u32, S
         wa.override_redirect = 1;
         wa.background_pixel = lock.colors[0 /* init */];
         lock.win = XCreateWindow(
-            dpy, /* Display */
-            lock.root, /* Parent window */
-            0, /* x */
-            0, /* y */
-            XDisplayWidth(dpy, lock.screen) as u32, /* width */
+            dpy,                                     /* Display */
+            lock.root,                               /* Parent window */
+            0,                                       /* x */
+            0,                                       /* y */
+            XDisplayWidth(dpy, lock.screen) as u32,  /* width */
             XDisplayHeight(dpy, lock.screen) as u32, /* height */
-            0, /* border_width */
-            XDefaultDepth(dpy, lock.screen), /* depth */
-            CopyFromParent as u32, /* Class */
-            XDefaultVisual(dpy, lock.screen), /* Visual */
-            CWOverrideRedirect | CWBackPixel, /* ValueMask */
-            &mut wa /* XSetWindowAttributes */);
+            0,                                       /* border_width */
+            XDefaultDepth(dpy, lock.screen),         /* depth */
+            CopyFromParent as u32,                   /* Class */
+            XDefaultVisual(dpy, lock.screen),        /* Visual */
+            CWOverrideRedirect | CWBackPixel,        /* ValueMask */
+            &mut wa,                                 /* XSetWindowAttributes */
+        );
 
-        let curs = vec![0; 8]; 
+        let curs = vec![0; 8];
 
         lock.pmap = XCreateBitmapFromData(dpy, lock.win, curs.as_ptr(), 8, 8);
 
@@ -231,8 +227,17 @@ fn lockscreen(dpy: *mut Display, rr: Xrandr, screen: i32, colors: HashMap<u32, S
             default_cmap,
             getvalue(0, colors.clone()).as_ptr() as *const i8,
             &mut screen_def_return,
-            &mut exact_def_return);
-        let invisible = XCreatePixmapCursor(dpy, lock.pmap, lock.pmap, &mut screen_def_return, &mut screen_def_return, 0, 0);
+            &mut exact_def_return,
+        );
+        let invisible = XCreatePixmapCursor(
+            dpy,
+            lock.pmap,
+            lock.pmap,
+            &mut screen_def_return,
+            &mut screen_def_return,
+            0,
+            0,
+        );
 
         XDefineCursor(dpy, lock.win, invisible);
 
@@ -240,7 +245,6 @@ fn lockscreen(dpy: *mut Display, rr: Xrandr, screen: i32, colors: HashMap<u32, S
 
         for _ in 0..6 {
             if ptgrab != GrabSuccess {
-
                 ptgrab = XGrabPointer(
                     dpy,
                     lock.root,
@@ -250,26 +254,17 @@ fn lockscreen(dpy: *mut Display, rr: Xrandr, screen: i32, colors: HashMap<u32, S
                     GrabModeAsync,
                     0,
                     invisible,
-                    CurrentTime)
-
+                    CurrentTime,
+                )
             }
 
             if kbgrab != GrabSuccess {
-
-                kbgrab = XGrabKeyboard(
-                    dpy,
-                    lock.root,
-                    1,
-                    GrabModeAsync,
-                    GrabModeAsync,
-                    CurrentTime)
-
+                kbgrab = XGrabKeyboard(dpy, lock.root, 1, GrabModeAsync, GrabModeAsync, CurrentTime)
             }
 
             /* Input is grabbed, we can lock the screen */
 
             if ptgrab == GrabSuccess && kbgrab == GrabSuccess {
-
                 if !keyboard_only {
                     XMapRaised(dpy, lock.win);
                 }
@@ -282,10 +277,11 @@ fn lockscreen(dpy: *mut Display, rr: Xrandr, screen: i32, colors: HashMap<u32, S
             }
 
             /* Retry on AlreadyGrabbed, fail on other errors */
-            if (ptgrab != AlreadyGrabbed && ptgrab != GrabSuccess) ||
-                (kbgrab != AlreadyGrabbed && kbgrab != GrabSuccess) {
-                    break;
-                }
+            if (ptgrab != AlreadyGrabbed && ptgrab != GrabSuccess)
+                || (kbgrab != AlreadyGrabbed && kbgrab != GrabSuccess)
+            {
+                break;
+            }
 
             usleep(100000);
         }
@@ -303,7 +299,14 @@ fn lockscreen(dpy: *mut Display, rr: Xrandr, screen: i32, colors: HashMap<u32, S
     (Lock::new(), false)
 }
 
-fn readpw(dpy: *mut Display, rr: Xrandr, locks: Vec<Lock>, actual_hash: String, keyboard_only: bool) {
+#[allow(clippy::non_upper_case_globals)]
+fn readpw(
+    dpy: *mut Display,
+    rr: Xrandr,
+    locks: Vec<Lock>,
+    actual_hash: String,
+    keyboard_only: bool,
+) {
     let mut running = true;
     let mut ev = XEvent::new();
     let mut passwd = Vec::new();
@@ -312,13 +315,17 @@ fn readpw(dpy: *mut Display, rr: Xrandr, locks: Vec<Lock>, actual_hash: String, 
 
     unsafe {
         while running && (XNextEvent(dpy, &mut ev) == 0) {
-
             let mut ksym: KeySym = 0;
 
             if ev.get_type() == KeyPress {
-
                 let buf_raw = CString::new("").unwrap().into_raw();
-                let num = XLookupString(&mut ev.key, buf_raw, 32, &mut ksym, ptr::null_mut() as *mut XComposeStatus);
+                let num = XLookupString(
+                    &mut ev.key,
+                    buf_raw,
+                    32,
+                    &mut ksym,
+                    ptr::null_mut() as *mut XComposeStatus,
+                );
                 let buf = CString::from_raw(buf_raw);
                 // let key_type = get_key_type(ksym);
 
@@ -345,16 +352,16 @@ fn readpw(dpy: *mut Display, rr: Xrandr, locks: Vec<Lock>, actual_hash: String, 
                                 failure = true;
                             }
                         };
-                        passwd = Vec::new(); 
-                    },
+                        passwd = Vec::new();
+                    }
                     XK_Escape => {
                         /* Clear password typed until now */
                         passwd = Vec::new();
-                    },
+                    }
                     XK_BackSpace => {
                         /* Remove last entered character */
                         passwd.pop();
-                    },
+                    }
                     _ => {
                         /* All other characters can be counted as a password character */
                         if num != 0 {
@@ -367,35 +374,47 @@ fn readpw(dpy: *mut Display, rr: Xrandr, locks: Vec<Lock>, actual_hash: String, 
                 if !keyboard_only {
                     let color = match passwd.is_empty() {
                         false => Color::INPUT,
-                        _ => {
-                            match failure {
-                                true => Color::FAILED,
-                                false => Color::INIT
-                            }
-                        }
+                        _ => match failure {
+                            true => Color::FAILED,
+                            false => Color::INIT,
+                        },
                     };
                     if running && (old_color as u32 != color as u32) {
                         for lock in locks.iter() {
-                            XSetWindowBackground(dpy, lock.win, *lock.colors.get(color as usize).unwrap());
+                            XSetWindowBackground(
+                                dpy,
+                                lock.win,
+                                *lock.colors.get(color as usize).unwrap(),
+                            );
                             // XSetWindowBackground(dpy, lock.win, lock.colors[color]);
                             XClearWindow(dpy, lock.win);
                         }
                         old_color = color;
-                    }
-                    else if (rr.active != 0) && (ev.get_type() == rr.evbase + RRScreenChangeNotify) {
+                    } else if (rr.active != 0)
+                        && (ev.get_type() == rr.evbase + RRScreenChangeNotify)
+                    {
                         let rre = XRRScreenChangeNotifyEvent::from(ev);
                         for lock in locks.iter() {
                             if lock.win == rre.window {
-                                match rre.rotation as i32{
-                                    RR_Rotate_90 | RR_Rotate_270 => XResizeWindow(dpy, lock.win, rre.height as u32, rre.width as u32),
-                                    _ => XResizeWindow(dpy, lock.win, rre.width as u32, rre.height as u32)
+                                match rre.rotation as i32 {
+                                    RR_Rotate_90 | RR_Rotate_270 => XResizeWindow(
+                                        dpy,
+                                        lock.win,
+                                        rre.height as u32,
+                                        rre.width as u32,
+                                    ),
+                                    _ => XResizeWindow(
+                                        dpy,
+                                        lock.win,
+                                        rre.width as u32,
+                                        rre.height as u32,
+                                    ),
                                 };
                                 XClearWindow(dpy, lock.win);
                                 break;
                             }
                         }
-                    }
-                    else {
+                    } else {
                         for lock in locks.iter() {
                             XRaiseWindow(dpy, lock.win);
                         }
@@ -439,11 +458,10 @@ fn main() {
         let colors = config::read_config();
 
         for s in 0..nscreens {
-
             let (lock, success) = lockscreen(dpy, rr, s, colors.clone(), keyboard_only);
             match success {
                 true => locks.push(lock),
-                false => break
+                false => break,
             };
         }
 
@@ -461,6 +479,5 @@ fn main() {
 
         /* run post-lock command */
         /* TODO: understand why slock code has fork */
-
     }
 }
