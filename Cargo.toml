@@ -1,7 +1,7 @@
 [package]
-name = "rlock"
+name = "leftlock"
 version = "0.1.0"
-authors = ["kavya <soldatargent@gmail.com>"]
+authors = ["VuiMuich <jm.spam@gmx.net>"]
 
 [dependencies]
 x11 = {version="2.7.0", features = ["xlib", "xrandr"]}

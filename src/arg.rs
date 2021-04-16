@@ -3,9 +3,9 @@ extern crate docopt;
 
 /* Defining a USAGE string */
 pub const USAGE: &'static str = "
-Program.
+Leftlock is a simpple session lock for X11.
 
-Usage: program [options]
+Usage: leftlock [options]
 
 Options:
     -h, --help          Show this message.
