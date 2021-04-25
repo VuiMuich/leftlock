@@ -11,8 +11,9 @@ use std::ffi::{CStr, CString};
 use libc::getenv;
 
 const CONFIG_MSG: &'static str = "
-#Do not edit/remove this line. Change color for each screen by editing only the right hand side of following lines.
+#Do not edit/remove this lines. Change color for each screen by editing only the right hand side of following lines.
 #If file is not parseable, will revert to default config.
+#The following line configures the colors for: Init, Input, Failed
 ";
 
 macro_rules! map (
