@@ -1,4 +1,4 @@
-/* To implement the trait new for all the required structs */
+// To implement the trait new for all the required structs
 
 use x11::xlib::*;
 

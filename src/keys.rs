@@ -1,4 +1,4 @@
-/* Module containing helper function associated with keys */
+// Module containing helper function associated with keys
 use x11::keysym::*;
 use x11::xlib::KeySym;
 

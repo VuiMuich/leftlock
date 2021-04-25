@@ -1,7 +1,10 @@
+
 use std::collections::HashMap;
 
 use std::fs::File;
+use std::path::Path;
 use std::io::prelude::*;
+use itertools::Itertools;
 
 use std::ffi::{CStr, CString};
 
@@ -27,8 +30,7 @@ macro_rules! map (
 pub fn getusername() -> String {
     let username: String;
     unsafe {
-        let name = getenv(CString::new("USER").unwrap().as_ptr());
-        username = CStr::from_ptr(name).to_string_lossy().into_owned();
+        username = CStr::from_ptr(getenv(CString::new("USER").unwrap().as_ptr())).to_string_lossy().into_owned();
     }
     username
 }
@@ -42,14 +44,13 @@ fn create_color_map(init: &str, input: &str, failed: &str) -> HashMap<u32, Strin
 }
 
 fn create_default_config() -> HashMap<u32, String> {
-    /* Create the default config */
+    // Create the default config
     println!("Used default config");
     create_color_map("black", "#006400", "#8B0000")
 }
 
 pub fn parse_contents(mut contents: String) -> HashMap<u32, String> {
-    /* Remove the message from the file contents and then separate using
-     * whitespaces */
+    // Remove the message from the file contents and then separate using whitespaces
     let config = contents.split_off(CONFIG_MSG.len() - 1);
     let mut iter = config.split_whitespace();
     iter.next();
@@ -72,14 +73,36 @@ pub fn parse_contents(mut contents: String) -> HashMap<u32, String> {
     create_default_config()
 }
 
+pub fn write_default_config(path: String) {
+    // let config = create_default_config().iter().for_each(|(k, v)| v.to_string());
+    let config: String = create_default_config()
+      .values()
+      .cloned()
+      .join(" ")
+      ;
+    match File::create(&path) {
+        Ok(mut f) => {
+          match f.write((String::from(CONFIG_MSG).to_owned() + &config).as_bytes()) {
+              Ok(_) => return,
+              Err(_) => println!("Failed to write config to ?{}", path)
+          }
+          return
+        },
+        Err(_) => println!("Failed to create config at path ?{}", path)
+    }
+}
+
 pub fn read_config() -> HashMap<u32, String> {
     let file_prefix = String::from("/home/");
-    let file_suffix = String::from("/.rlock_config");
+    let file_suffix = String::from("/.config/leftlock");
 
     let username = getusername();
 
     let path = file_prefix + &username + &file_suffix;
 
+    if ! Path::new(&path).exists() {
+        write_default_config(path.clone())
+    }
     match File::open(path) {
         Ok(f) => {
             println!("Reading from config");
@@ -91,7 +114,7 @@ pub fn read_config() -> HashMap<u32, String> {
             }
         }
 
-        Err(_) => { /* TODO: Create file in case it does not exist */ }
+        Err(_) => println!("Error: Faild to read from config!") 
     }
     create_default_config()
 }
