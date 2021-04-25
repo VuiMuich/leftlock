@@ -4,14 +4,15 @@ extern crate itertools;
 extern crate libc;
 extern crate pwd;
 extern crate x11;
+extern crate pam;
 
 mod config;
 
 use structs::{Constructor, Lock, Xrandr};
 mod structs;
 
-use keys::get_key_type;
-mod keys;
+// use keys::get_key_type;
+// mod keys;
 
 use arg::USAGE;
 mod arg;
@@ -52,6 +53,18 @@ fn read_input() -> String {
     match io::stdin().read_line(&mut input) {
         Ok(_) => input,
         Err(msg) => panic!("Error reading input: {}", msg.to_string()),
+    }
+}
+
+fn pam_auth(mut auth: pam::Authenticator<pam::PasswordConv>, password: String) -> bool {
+    println!("{}, {}", config::getusername(), password);
+    auth.get_handler().set_credentials(config::getusername(), password);
+    if auth.authenticate().is_ok() && auth.open_session().is_ok() {
+        println!("Authentication with PAM successfull.");
+        return true
+    } else {
+       println!("Authentication with PAM failed. Trying leftlock-password next." );
+       return false
     }
 }
 
@@ -351,16 +364,19 @@ fn readpw(
                 // let key_type = get_key_type(ksym);
 
                 // If key typed is one of the extras ignore it
-                match get_key_type(ksym) {
-                    Ok(_) => continue,
-                    Err(_) => {}
-                };
+                // match get_key_type(ksym) {
+                //     Ok(_) => continue,
+                //     Err(_) => {}
+                // };
 
                 match ksym as u32 {
                     XK_Return => {
                         // User has finished typing the password
                         let passwd_string = String::from_utf8(passwd).unwrap();
-
+                        let auth = pam::Authenticator::with_password("leftlock").unwrap();
+                        if pam_auth(auth, passwd_string.clone()) {
+                            running = false;
+                        }
                         // Hash password
                         let input_hash = hash(&passwd_string);
 
