@@ -2,9 +2,9 @@ extern crate crypto;
 extern crate docopt;
 extern crate itertools;
 extern crate libc;
+extern crate pam;
 extern crate pwd;
 extern crate x11;
-extern crate pam;
 
 mod config;
 
@@ -57,14 +57,15 @@ fn read_input() -> String {
 }
 
 fn pam_auth(mut auth: pam::Authenticator<pam::PasswordConv>, password: String) -> bool {
-    println!("{}, {}", config::getusername(), password);
-    auth.get_handler().set_credentials(config::getusername(), password);
+    auth.get_handler()
+        .set_credentials(config::getusername(), password);
+    println!("{:?}", auth.authenticate());
     if auth.authenticate().is_ok() && auth.open_session().is_ok() {
         println!("Authentication with PAM successfull.");
-        return true
+        return true;
     } else {
-       println!("Authentication with PAM failed. Trying leftlock-password next." );
-       return false
+        println!("Authentication with PAM failed. Trying leftlock-password next.");
+        return false;
     }
 }
 
