@@ -6,10 +6,10 @@ Leftlock is a fork of [rlock](https://github.com/SilverSoldier/rlock) which itse
 
 + Custom password: Unlike slock, which uses the user's system password to exit the lock, leftlock allows to set a custom password stored locally, with command line option to modify.
 
++ use picom to blur the screen like [this slok fork](https://github.com/khuedoan/slock) does
+
 ## Planned features
 + allow use of PAM
-
-+ use picom to blur the screen like [this slok fork](https://github.com/khuedoan/slock) does
 
 + configure a lockscreen wallpaper
 
