@@ -11,4 +11,5 @@ Options:
     -h, --help          Show this message.
     -p, --password      Change password.
     -k, --keypad        Lock only keypad.
+    -b, --blur          Blur screen (depends on picom)
 ";
